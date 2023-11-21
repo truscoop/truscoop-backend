@@ -6,7 +6,7 @@ Articles:
 
 - id
 - url
-- type
+- genre
 - perceived (?)
 - primary_topic
 - secondary_topic
