@@ -1,0 +1,3 @@
+## Compression command
+
+> zip -r newsapp-backend.zip . -x "*venv*" -x "*.git*" -x "*src/data*"

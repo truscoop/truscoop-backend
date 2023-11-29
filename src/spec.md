@@ -18,8 +18,6 @@ Articles:
 Users:
 
 - id
-- username
-- password
 
 Ratings:
 
@@ -44,6 +42,11 @@ Comments:
 
 ## Requests
 
+GET ALL ARTICLES
+GET /api/articles/
+articles : list of articles
+
+GET SPECIFIC ARTICLE
 GET /api/articles/id/
 article : { - id,
 
@@ -57,3 +60,22 @@ article : { - id,
 - text,
 - classification,  
   }
+
+GET USER RATING AND AGGREGATED RATING OF SPECIFIC ARTICLE AND USER
+GET /api/articles/rating/id/
+rating???: {
+
+- user_rating,
+- rating
+  }
+
+POST RATING IN SPECIFIC ARTICLE WITH SPECIFIC USER
+POST /api/articles/rating/id/
+success : {
+Rating on article {article_id} of {rating} by user {user_id} submitted
+}
+
+DELETE RATING IN SPECIFIC ARTICLE OF SPECIFIC USER
+DELETE /api/articles/rating/id/
+{"success":
+"Rating deleted successfully!"}
