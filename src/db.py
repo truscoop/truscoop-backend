@@ -13,42 +13,39 @@ class Articles(db.Model):
     SQLAlchemy Class for Articles, following this format when retrieved
 
     {
-    - id
-    - url
-    - genre
-    - perceived (?)
-    - primary_topic
-    - secondary_topic
-    - democrat_vote
-    - republican_vote
-    - classification
-    - (future idea) have users_id be recorded when they submit an article
+        - id
+        - url
+        - favicon
+        - top_img
+        - date
+        - summary
+        - ai_rating
+        - user_rating
+        - (future idea) have users_id be recorded when they submit an article
     }
     """
 
     __tablename__ = "Articles"
     id = db.Column(db.Integer, primary_key=True)
     url = db.Column(db.String, nullable=False)
-    genre = db.Column(db.String, nullable=True)
-    perceived = db.Column(db.Integer, nullable=False)
-    primary_topic = db.Column(db.String, nullable=False)
-    secondary_topic = db.Column(db.String, nullable=True)
-    democrat_vote = db.Column(db.String, nullable=False)
-    republican_vote = db.Column(db.String, nullable=False)
-    classification = db.Column(db.String, nullable=False)
+    favicon = db.Column(db.String, nullable=True)
+    top_img = db.Column(db.String, nullable=True)
+    date = db.Column(db.String, nullable=False)
+    summary = db.Column(db.String, nullable=True)
+    ai_rating = db.Column(db.String, nullable=False)
+    user_rating = db.Column(db.String, nullable=True)
 
     def __init__(self, **kwargs):
         """
         Initialize an Article Object
         """
         self.url = kwargs.get("url", "")
-        self.genre = kwargs.get("genre", "")
-        self.perceived = kwargs.get("perceived", "")
-        self.primary_topic = kwargs.get("primary_topic", "")
-        self.secondary_topic = kwargs.get("secondary_topic", "")
-        self.democrat_vote = kwargs.get("democrat_vote", "")
-        self.republican_vote = kwargs.get("republican_vote", "")
-        self.classification = kwargs.get("id", "")
+        self.favicon = kwargs.get("favicon", "")
+        self.top_img = kwargs.get("top_img", "")
+        self.date = kwargs.get("date", "")
+        self.summary = kwargs.get("summary", "")
+        self.ai_rating = kwargs.get("ai_rating", "")
+        self.user_rating = kwargs.get("user_rating", "")
 
     def serialize(self):
         """
@@ -56,14 +53,12 @@ class Articles(db.Model):
         """
         return {
             "url": self.url,
-            "genre": self.genre,
-            "perceived": self.perceived,
-            "primary_topic": self.primary_topic,
-            "secondary_topic": self.secondary_topic,
-            "democrat_vote": self.democrat_vote,
-            "republican_vote": self.republican_vote,
-            "classification": self.classification
-
+            "favicon": self.favicon,
+            "top_img": self.top_img,
+            "date": self.date,
+            "summary": self.summary,
+            "ai_rating": self.ai_rating,
+            "user_rating": self.user_rating
         }
 
 # class Users(db.Model):

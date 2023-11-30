@@ -24,22 +24,20 @@ def load_articles():
         
         # Creates a dataframe of the articles
         print("Loading in the Articles into the database")
-        data=pandas.read_csv("data/articles.tsv", sep='\t')
-        data["classification"] = np.nan
-        data = data.rename(columns={"q3" : "genre", "primary.topic": "primary_topic", "secondary.topic" : "secondary_topic", "democrat.vote" : "democrat_vote", "republican.vote" : "republican_vote"})
+        data = pandas.read_csv("/data/final_for_backend.csv")
 
         # Loop through the dataframe
         for index, row in data.iterrows():
             article = Articles(
                     url = row["url"],
-                    genre = row["genre"],
-                    perceived = row["perceived"],
-                    primary_topic = row["primary_topic"],
-                    secondary_topic = row["secondary_topic"],
-                    democrat_vote = row["democrat_vote"],
-                    republican_vote = row["republican_vote"],
-                    classification = row["classification"]
-             )
+                    title = row["title"],
+                    favicon = row["favicon"],
+                    top_img = row["top_img"],
+                    date = row["date"],
+                    summary = row["summary"],
+                    ai_rating = row["ai_rating"],
+                    user_rating = row["user_rating"]
+            )
             db.session.add(article)
         db.session.commit()
 
