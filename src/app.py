@@ -6,6 +6,7 @@ from flask_sqlalchemy import SQLAlchemy
 import sqlalchemy as sa
 import pandas
 import numpy as np
+import os
 
 
 app = Flask(__name__)
@@ -21,10 +22,14 @@ rating_last_id = 1
 
 
 def load_articles():
+    
+        here = os.path.dirname(os.path.abspath(__file__))
+        parent = os.path.dirname(os.path.normpath(here))
+        path = os.path.join(parent, "data/final_for_backend.csv")
         
         # Creates a dataframe of the articles
         print("Loading in the Articles into the database")
-        data = pandas.read_csv("/data/final_for_backend.csv")
+        data = pandas.read_csv(path)
 
         # Loop through the dataframe
         for index, row in data.iterrows():
@@ -94,21 +99,29 @@ def get_rating(article_id):
     Endpoint for getting both the user rating based on the user_id 
     and the aggregated rating of all ratings based on the article_id  
     """
-    body = json.loads(request.data)
-    user_id = body.get("user_id")
 
-    # Query for the rating first
-    rating = Ratings.query.filter_by(article_id=article_id, user_id = user_id).first()
-    if rating is None:
-        return failure_response("No rating found")
-    
-    # Get the aggregated rating
-    ratings = [rating.rating for rating in Ratings.query.filter_by(article_id=article_id)]
+    params = request.args
+    user_id = params.get("user_id")
 
-    return success_response({
-        "user_rating": rating.rating,
-        "rating" : sum(ratings) / len(ratings)
+    if user_id is not None:
+        # Query for the rating first
+        rating = Ratings.query.filter_by(article_id=article_id, user_id = user_id).first()
+        if rating is None:
+            return failure_response("No rating found")
+        
+        # Get the aggregated rating
+        ratings = [rating.rating for rating in Ratings.query.filter_by(article_id=article_id)]
+
+        return success_response({
+            "user_rating": rating.rating,
+            "rating" : sum(ratings) / max(1, len(ratings))
         })
+    
+    # If there is no user_id, then just return the aggregated rating
+    ratings = [rating.rating for rating in Ratings.query.filter_by(article_id=article_id)]
+    if len(ratings) == 0:
+        return success_response({"rating": None})
+    return success_response({"rating": sum(ratings) / len(ratings)})
 
 @app.route("/api/articles/rating/<int:article_id>/", methods=["POST"])
 def post_rating(article_id):
@@ -117,22 +130,37 @@ def post_rating(article_id):
 
     user_id: the unique phone identifier of the user to post rating on
     """
-    body = json.loads(request.data)
-    user_id = body.get("user_id")
+    params = request.args
+    user_id = params.get("user_id")
+
+    article = Articles.query.filter_by(id=article_id).first()
+    if article is None:
+        return failure_response("Invalid article!")
     
     # If they've already rated before, then delete the previous rating
     old_rating = Ratings.query.filter_by(article_id=article_id, user_id = user_id).first()
+    print("old_rating", old_rating)
     if old_rating is not None:
         db.session.delete(old_rating)
 
     rating = Ratings(
         article_id = article_id,
         user_id = user_id,
-        rating = body.get("rating")
+        rating = params.get("rating")
     )
 
     db.session.add(rating)
     db.session.commit()
+
+    # update the user_rating in the Articles table to be the average of all the ratings
+    ratings = [rating.rating for rating in Ratings.query.filter_by(article_id=article_id)]
+    print("ratings", ratings)
+    if len(ratings) == 0:
+        article.user_rating = None
+    else:
+        article.user_rating = sum(ratings) / len(ratings)
+    db.session.commit()
+
     return success_response({"success": f"Rating on article {article_id} of {rating} by user {user_id} submitted"})
 
 @app.route("/api/articles/rating/<int:article_id>/", methods=["DELETE"])
@@ -142,18 +170,31 @@ def delete_rating(article_id):
 
     user_id: the unique phone identifier id to delete the rating from
     """
-    body = json.loads(request.data)
-    user_id = body.get("user_id")
+    params = request.args
+    user_id = params.get("user_id")
+
+    article = Articles.query.filter_by(id=article_id).first()
+    if article is None:
+        return failure_response("Invalid article!")
 
     # Query for the rating first
     rating = Ratings.query.filter_by(article_id=article_id, user_id = user_id).first()
     if rating is None:
         return failure_response("No rating found to delete")
-    
+
     db.session.delete(rating)
     db.session.commit()
-    return success_response({"success": "Rating deleted successfully!"})
 
+    # update the user_rating in the Articles table to be the average of all the ratings
+    ratings = [rating.rating for rating in Ratings.query.filter_by(article_id=article_id)]
+    print("ratings", ratings)
+    if len(ratings) == 0:
+        article.user_rating = None
+    else:
+        article.user_rating = sum(ratings) / len(ratings)
+
+    db.session.commit()
+    return success_response({"success": "Rating deleted successfully!"})
 
 # @app.route("/api/articles/", methods=["POST"])
 # def create_article():
