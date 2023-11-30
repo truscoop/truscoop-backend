@@ -8,6 +8,7 @@ import pandas
 import numpy as np
 import os
 
+from new_article import handle_incoming_url
 
 app = Flask(__name__)
 db_filename = "truscoop.db"
@@ -130,8 +131,22 @@ def post_rating(article_id):
 
     user_id: the unique phone identifier of the user to post rating on
     """
-    params = request.args
-    user_id = params.get("user_id")
+
+    body = None
+
+    try:
+        # check if there is a provided body
+        body = json.loads(request.data)
+    except:
+        return failure_response("Please provide a json body")
+
+    user_id = body.get("user_id")
+    rating = body.get("rating")
+
+    # if user_id or rating is not provided, return error
+    if user_id is None or rating is None:
+        return failure_response("No user_id or rating provided")
+
 
     article = Articles.query.filter_by(id=article_id).first()
     if article is None:
@@ -146,7 +161,7 @@ def post_rating(article_id):
     rating = Ratings(
         article_id = article_id,
         user_id = user_id,
-        rating = params.get("rating")
+        rating = rating
     )
 
     db.session.add(rating)
@@ -154,7 +169,6 @@ def post_rating(article_id):
 
     # update the user_rating in the Articles table to be the average of all the ratings
     ratings = [rating.rating for rating in Ratings.query.filter_by(article_id=article_id)]
-    print("ratings", ratings)
     if len(ratings) == 0:
         article.user_rating = None
     else:
@@ -187,7 +201,6 @@ def delete_rating(article_id):
 
     # update the user_rating in the Articles table to be the average of all the ratings
     ratings = [rating.rating for rating in Ratings.query.filter_by(article_id=article_id)]
-    print("ratings", ratings)
     if len(ratings) == 0:
         article.user_rating = None
     else:
@@ -196,12 +209,44 @@ def delete_rating(article_id):
     db.session.commit()
     return success_response({"success": "Rating deleted successfully!"})
 
-# @app.route("/api/articles/", methods=["POST"])
-# def create_article():
-#     """
-#     Endpoint for creating a new article
-#     """
+@app.route("/api/articles/", methods=["POST"])
+def create_article():
+    """
+    Endpoint for creating a new article
+    """
 
+    body = json.loads(request.data)
+    url = body.get("url")
+    if url is None:
+        return failure_response("No url provided")
+
+    # is the article already in the database? if so, return the id of the article
+    article = Articles.query.filter_by(url=url).first()
+    if article is not None:
+        return success_response({"message": "article already exists","id": article.id})
+
+    article = handle_incoming_url(url)
+    if article is None:
+        return failure_response("Error: article not found")
+
+    # add the article to the database
+    new_article = Articles(
+        url = article['url'],
+        title = article['title'],
+        favicon = article['favicon'],
+        top_img = article['top_img'],
+        date = article['date'],
+        summary = article['summary'],
+        ai_rating = article['ai_rating'],
+        user_rating = article['user_rating']
+    )
+
+    db.session.add(new_article)
+    db.session.commit()
+
+
+
+    return success_response({"success": "Article added successfully!"})
 
 # -- MAIN ------------------------------------------------------
 if __name__ == "__main__":

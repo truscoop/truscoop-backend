@@ -15,6 +15,7 @@ class Articles(db.Model):
     {
         - id
         - url
+        - title
         - favicon
         - top_img
         - date
@@ -28,9 +29,10 @@ class Articles(db.Model):
     __tablename__ = "Articles"
     id = db.Column(db.Integer, primary_key=True)
     url = db.Column(db.String, nullable=False)
+    title = db.Column(db.String, nullable=True)
     favicon = db.Column(db.String, nullable=True)
     top_img = db.Column(db.String, nullable=True)
-    date = db.Column(db.String, nullable=False)
+    date = db.Column(db.String, nullable=True)
     summary = db.Column(db.String, nullable=True)
     ai_rating = db.Column(db.String, nullable=False)
     user_rating = db.Column(db.String, nullable=True)
@@ -40,6 +42,7 @@ class Articles(db.Model):
         Initialize an Article Object
         """
         self.url = kwargs.get("url", "")
+        self.title = kwargs.get("title", "")
         self.favicon = kwargs.get("favicon", "")
         self.top_img = kwargs.get("top_img", "")
         self.date = kwargs.get("date", "")
@@ -53,6 +56,7 @@ class Articles(db.Model):
         """
         return {
             "url": self.url,
+            "title": self.title,
             "favicon": self.favicon,
             "top_img": self.top_img,
             "date": self.date,

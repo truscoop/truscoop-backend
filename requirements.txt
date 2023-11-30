@@ -1,1 +1,5 @@
 flask_sqlalchemy
+scikit-learn==1.2.1
+newspaper3k==0.2.8
+numpy==1.23.2
+nltk==3.8.1
