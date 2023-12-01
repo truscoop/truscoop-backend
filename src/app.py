@@ -196,7 +196,7 @@ def post_rating(article_id):
     db.session.commit()
 
     return success_response({
-        "success": f"Rating on article {article_id} of {rating} by user {userID} submitted"
+        artcle.serialize()
     })
 
 @app.route("/api/articles/rating/<int:article_id>/", methods=["DELETE"])
