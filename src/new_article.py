@@ -38,8 +38,8 @@ def determine_bias(content):
 
 def handle_incoming_url(url):
     # find the following information from the url:
-    # url, title, favicon, top_img, date, summary, ai_rating, user_rating
-    # ai_rating is the prediction from the model
+    # url, title, favicon, topImg, date, summary, aiRating, userRating
+    # aiRating is the prediction from the model
     res_map = {}
 
     article = Article(url)
@@ -59,12 +59,12 @@ def handle_incoming_url(url):
         res_map['url'] = url
         res_map['title'] = article.title
         res_map['favicon'] = article.meta_favicon
-        res_map['top_img'] = article.top_image
+        res_map['topImg'] = article.top_image
         res_map['date'] = article.publish_date
         res_map['summary'] = article.summary
-        res_map['ai_rating'] = determine_bias(article.text)
-        # user_rating will start as None
-        res_map['user_rating'] = None
+        res_map['aiRating'] = determine_bias(article.text)
+        # userRating will start as None
+        res_map['userRating'] = None
         return res_map
 
     except:

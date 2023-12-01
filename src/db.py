@@ -29,20 +29,20 @@ class Articles(db.Model):
     __tablename__ = "Articles"
     id = db.Column(db.Integer, primary_key=True)
     url = db.Column(db.String, nullable=False)
-    title = db.Column(db.String, nullable=True)
-    favicon = db.Column(db.String, nullable=True)
-    top_img = db.Column(db.String, nullable=True)
-    date = db.Column(db.String, nullable=True)
-    summary = db.Column(db.String, nullable=True)
+    name = db.Column(db.String, nullable=False)
+    favicon = db.Column(db.String, nullable=False)
+    top_img = db.Column(db.String, nullable=False)
+    date = db.Column(db.DateTime, nullable=False)
+    summary = db.Column(db.String, nullable=False)
     ai_rating = db.Column(db.String, nullable=False)
-    user_rating = db.Column(db.String, nullable=True)
+    user_rating = db.Column(db.Integer, nullable=False)
 
     def __init__(self, **kwargs):
         """
         Initialize an Article Object
         """
         self.url = kwargs.get("url", "")
-        self.title = kwargs.get("title", "")
+        self.name = kwargs.get("name", "")
         self.favicon = kwargs.get("favicon", "")
         self.top_img = kwargs.get("top_img", "")
         self.date = kwargs.get("date", "")
@@ -54,15 +54,18 @@ class Articles(db.Model):
         """
         Serialize an Article Object
         """
+        dateformat = '%Y-%m-%d %H:%M:%S'
+
         return {
+            "id": str(self.id),
             "url": self.url,
-            "title": self.title,
+            "name": self.name,
             "favicon": self.favicon,
-            "top_img": self.top_img,
-            "date": self.date,
+            "topImg": self.top_img,
+            "date": self.date.isoformat() + "Z",
             "summary": self.summary,
-            "ai_rating": self.ai_rating,
-            "user_rating": self.user_rating
+            "aiRating": self.ai_rating,
+            "userRating": float(self.user_rating)
         }
 
 # class Users(db.Model):

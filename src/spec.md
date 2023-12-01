@@ -65,7 +65,7 @@ GET USER RATING AND AGGREGATED RATING OF SPECIFIC ARTICLE AND USER
 GET /api/articles/rating/id/
 rating???: {
 
-- user_rating,
+- userRating,
 - rating
   }
 

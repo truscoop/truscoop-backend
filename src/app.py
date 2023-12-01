@@ -7,6 +7,7 @@ import sqlalchemy as sa
 import pandas
 import numpy as np
 import os
+from datetime import datetime
 
 from new_article import handle_incoming_url
 
@@ -33,16 +34,20 @@ def load_articles():
         data = pandas.read_csv(path)
 
         # Loop through the dataframe
-        for index, row in data.iterrows():
+        date_format = '%Y-%m-%d'
+        data2 = data.replace(np.nan, '', regex=True)
+
+        for index, row in data2.iterrows():
+            print(datetime.strptime(row["date"], date_format))
             article = Articles(
                     url = row["url"],
-                    title = row["title"],
+                    name = row["title"],
                     favicon = row["favicon"],
-                    top_img = row["top_img"],
-                    date = row["date"],
+                    topImg = row["topImg"],
+                    date = datetime.strptime(row["date"], date_format),
                     summary = row["summary"],
-                    ai_rating = row["ai_rating"],
-                    user_rating = row["user_rating"]
+                    aiRating = "neutral" if row["aiRating"] == 1 else "conservative" if row["aiRating"] == 2 else "liberal",
+                    userRating = -1
             )
             db.session.add(article)
         db.session.commit()
@@ -77,7 +82,7 @@ def base():
     """
     Endpoint base
     """
-    return success_response({"success": "base request succeeded!"})
+    return "base request succeeded!", 200
 
 @app.route("/api/articles/<int:article_id>/", methods=["GET"])
 def get_article(article_id):
@@ -87,7 +92,7 @@ def get_article(article_id):
     article = Articles.query.filter_by(id=article_id).first()
     if article is None:
         return failure_response("Task not found!")
-    return success_response(article.serialize())
+    return article.serialize(), 200
 
 @app.route("/api/articles/", methods=["GET"])
 def get_all_articles():
@@ -99,21 +104,21 @@ def get_all_articles():
         if article is None:
             return failure_response("Invalid article!")
         articles.append(article.serialize())
-    return success_response({"articles": articles})
+    return articles, 200
 
 @app.route("/api/articles/rating/<int:article_id>/", methods=["GET"])
 def get_rating(article_id):
     """
-    Endpoint for getting both the user rating based on the user_id 
+    Endpoint for getting both the user rating based on the userID 
     and the aggregated rating of all ratings based on the article_id  
     """
 
     params = request.args
-    user_id = params.get("user_id")
+    userID = params.get("userID")
 
-    if user_id is not None:
+    if userID is not None:
         # Query for the rating first
-        rating = Ratings.query.filter_by(article_id=article_id, user_id = user_id).first()
+        rating = Ratings.query.filter_by(article_id=article_id, userID = userID).first()
         if rating is None:
             return failure_response("No rating found")
         
@@ -121,22 +126,28 @@ def get_rating(article_id):
         ratings = [rating.rating for rating in Ratings.query.filter_by(article_id=article_id)]
 
         return success_response({
-            "user_rating": rating.rating,
+            "userRating": rating.rating,
             "rating" : sum(ratings) / max(1, len(ratings))
         })
     
-    # If there is no user_id, then just return the aggregated rating
+    # If there is no userID, then just return the aggregated rating
     ratings = [rating.rating for rating in Ratings.query.filter_by(article_id=article_id)]
     if len(ratings) == 0:
-        return success_response({"rating": None})
-    return success_response({"rating": sum(ratings) / len(ratings)})
+        return success_response({
+            "rating": -1,
+            "userRating": -1
+        })
+    return success_response({
+            "rating": sum(ratings) / len(ratings),
+            "userRating": -1
+        })
 
 @app.route("/api/articles/rating/<int:article_id>/", methods=["POST"])
 def post_rating(article_id):
     """
     Endpoint for posting a rating on the article based on the article_id
 
-    user_id: the unique phone identifier of the user to post rating on
+    userID: the unique phone identifier of the user to post rating on
     """
 
     body = None
@@ -147,12 +158,12 @@ def post_rating(article_id):
     except:
         return failure_response("Please provide a json body")
 
-    user_id = body.get("user_id")
+    userID = body.get("userID")
     rating = body.get("rating")
 
-    # if user_id or rating is not provided, return error
-    if user_id is None or rating is None:
-        return failure_response("No user_id or rating provided")
+    # if userID or rating is not provided, return error
+    if userID is None or rating is None:
+        return failure_response("No userID or rating provided")
 
 
     article = Articles.query.filter_by(id=article_id).first()
@@ -160,58 +171,60 @@ def post_rating(article_id):
         return failure_response("Invalid article!")
     
     # If they've already rated before, then delete the previous rating
-    old_rating = Ratings.query.filter_by(article_id=article_id, user_id = user_id).first()
+    old_rating = Ratings.query.filter_by(article_id=article_id, userID = userID).first()
     print("old_rating", old_rating)
     if old_rating is not None:
         db.session.delete(old_rating)
 
     rating = Ratings(
         article_id = article_id,
-        user_id = user_id,
+        userID = userID,
         rating = rating
     )
 
     db.session.add(rating)
     db.session.commit()
 
-    # update the user_rating in the Articles table to be the average of all the ratings
+    # update the userRating in the Articles table to be the average of all the ratings
     ratings = [rating.rating for rating in Ratings.query.filter_by(article_id=article_id)]
     if len(ratings) == 0:
-        article.user_rating = None
+        article.userRating = None
     else:
-        article.user_rating = sum(ratings) / len(ratings)
+        article.userRating = sum(ratings) / len(ratings)
     db.session.commit()
 
-    return success_response({"success": f"Rating on article {article_id} of {rating} by user {user_id} submitted"})
+    return success_response({
+        "success": f"Rating on article {article_id} of {rating} by user {userID} submitted"
+    })
 
 @app.route("/api/articles/rating/<int:article_id>/", methods=["DELETE"])
 def delete_rating(article_id):
     """
     Endpoint for deleting a rating from a specific article from the article_id
 
-    user_id: the unique phone identifier id to delete the rating from
+    userID: the unique phone identifier id to delete the rating from
     """
     params = request.args
-    user_id = params.get("user_id")
+    userID = params.get("userID")
 
     article = Articles.query.filter_by(id=article_id).first()
     if article is None:
         return failure_response("Invalid article!")
 
     # Query for the rating first
-    rating = Ratings.query.filter_by(article_id=article_id, user_id = user_id).first()
+    rating = Ratings.query.filter_by(article_id=article_id, userID = userID).first()
     if rating is None:
         return failure_response("No rating found to delete")
 
     db.session.delete(rating)
     db.session.commit()
 
-    # update the user_rating in the Articles table to be the average of all the ratings
+    # update the userRating in the Articles table to be the average of all the ratings
     ratings = [rating.rating for rating in Ratings.query.filter_by(article_id=article_id)]
     if len(ratings) == 0:
-        article.user_rating = None
+        article.userRating = None
     else:
-        article.user_rating = sum(ratings) / len(ratings)
+        article.userRating = sum(ratings) / len(ratings)
 
     db.session.commit()
     return success_response({"success": "Rating deleted successfully!"})
@@ -239,13 +252,13 @@ def create_article():
     # add the article to the database
     new_article = Articles(
         url = article['url'],
-        title = article['title'],
+        name = article['name'],
         favicon = article['favicon'],
-        top_img = article['top_img'],
+        topImg = article['topImg'],
         date = article['date'],
         summary = article['summary'],
-        ai_rating = article['ai_rating'],
-        user_rating = article['user_rating']
+        aiRating = article['aiRating'],
+        userRating = article['userRating']
     )
 
     db.session.add(new_article)
