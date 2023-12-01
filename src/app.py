@@ -103,6 +103,7 @@ def get_all_articles():
     for article in Articles.query.all():
         if article is None:
             return failure_response("Invalid article!")
+        article.favicon = "https://www.google.com/s2/favicons?domain=" + article.url + "&sz=128" 
         articles.append(article.serialize())
     return articles, 200
 
