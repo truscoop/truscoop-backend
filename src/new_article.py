@@ -58,7 +58,7 @@ def handle_incoming_url(url):
 
         res_map['url'] = url
         res_map['title'] = article.title
-        res_map['favicon'] = article.meta_favicon
+        res_map['favicon'] = "https://www.google.com/s2/favicons?domain="+url+"&sz=128"
         res_map['topImg'] = article.top_image
         res_map['date'] = article.publish_date
         res_map['summary'] = article.summary
