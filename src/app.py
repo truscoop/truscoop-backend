@@ -72,6 +72,13 @@ def failure_response(message, code=404):
 
 
 # -- ROUTES ------------------------------------------------------
+@app.route("/", methods=["GET"])
+def base():
+    """
+    Endpoint base
+    """
+    return success_response({"success": "base request succeeded!"})
+
 @app.route("/api/articles/<int:article_id>/", methods=["GET"])
 def get_article(article_id):
     """

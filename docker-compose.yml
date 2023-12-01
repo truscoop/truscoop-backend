@@ -1,0 +1,7 @@
+version: "3"
+
+services:
+  demo:
+    image: danielchuang/truscoop-backend:latest
+    ports:
+      - "80:8000"
