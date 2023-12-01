@@ -115,11 +115,11 @@ def get_rating(article_id):
     """
 
     params = request.args
-    userID = params.get("userID")
+    userID = params.get("user_id")
 
     if userID is not None:
         # Query for the rating first
-        rating = Ratings.query.filter_by(article_id=article_id, userID = userID).first()
+        rating = Ratings.query.filter_by(article_id=article_id, userID=userID).first()
         if rating is None:
             return failure_response("No rating found")
         
@@ -151,16 +151,15 @@ def post_rating(article_id):
     userID: the unique phone identifier of the user to post rating on
     """
 
-    body = None
+    params = request.args
+    userID = params.get("user_id")
+    rating = params.get("rating")
+    
+    if not userID or not rating:
+        return failure_response("Please provide parameters for user_id and rating")
 
-    try:
-        # check if there is a provided body
-        body = json.loads(request.data)
-    except:
-        return failure_response("Please provide a json body")
-
-    userID = body.get("userID")
-    rating = body.get("rating")
+    print("userID", userID)
+    print("rating", rating)
 
     # if userID or rating is not provided, return error
     if userID is None or rating is None:
@@ -172,26 +171,28 @@ def post_rating(article_id):
         return failure_response("Invalid article!")
     
     # If they've already rated before, then delete the previous rating
-    old_rating = Ratings.query.filter_by(article_id=article_id, userID = userID).first()
+    old_rating = Ratings.query.filter_by(article_id=article_id, user_id=userID).first()
     print("old_rating", old_rating)
     if old_rating is not None:
         db.session.delete(old_rating)
 
     rating = Ratings(
         article_id = article_id,
-        userID = userID,
+        user_id = userID,
         rating = rating
     )
-
     db.session.add(rating)
     db.session.commit()
 
     # update the userRating in the Articles table to be the average of all the ratings
     ratings = [rating.rating for rating in Ratings.query.filter_by(article_id=article_id)]
+
+    article = Articles.query.filter_by(id=article_id).first()
+    
     if len(ratings) == 0:
-        article.userRating = None
+        article.user_rating = -1
     else:
-        article.userRating = sum(ratings) / len(ratings)
+        article.user_rating = sum(ratings) / len(ratings)
     db.session.commit()
 
     return success_response({
@@ -206,14 +207,14 @@ def delete_rating(article_id):
     userID: the unique phone identifier id to delete the rating from
     """
     params = request.args
-    userID = params.get("userID")
+    userID = params.get("user_id")
 
     article = Articles.query.filter_by(id=article_id).first()
     if article is None:
         return failure_response("Invalid article!")
 
     # Query for the rating first
-    rating = Ratings.query.filter_by(article_id=article_id, userID = userID).first()
+    rating = Ratings.query.filter_by(article_id=article_id, user_id=userID).first()
     if rating is None:
         return failure_response("No rating found to delete")
 
@@ -223,9 +224,9 @@ def delete_rating(article_id):
     # update the userRating in the Articles table to be the average of all the ratings
     ratings = [rating.rating for rating in Ratings.query.filter_by(article_id=article_id)]
     if len(ratings) == 0:
-        article.userRating = None
+        article.user_rating = -1
     else:
-        article.userRating = sum(ratings) / len(ratings)
+        article.user_rating = sum(ratings) / len(ratings)
 
     db.session.commit()
     return success_response({"success": "Rating deleted successfully!"})
