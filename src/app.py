@@ -119,7 +119,7 @@ def get_rating(article_id):
 
     if userID is not None:
         # Query for the rating first
-        rating = Ratings.query.filter_by(article_id=article_id, userID=userID).first()
+        rating = Ratings.query.filter_by(article_id=article_id, user_id=userID).first()
         if rating is None:
             return failure_response("No rating found")
         
