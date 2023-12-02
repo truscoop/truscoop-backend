@@ -263,7 +263,7 @@ def delete_rating(article_id):
     else:
         article.user_rating = sum(ratings) / len(ratings)
 
-    return article.serialize(), 204
+    return article.serialize(), 200
 
 # -- MAIN ------------------------------------------------------
 if __name__ == "__main__":
