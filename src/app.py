@@ -81,17 +81,7 @@ def base():
     """
     Endpoint base
     """
-    return "base request succeeded!", 200
-
-@app.route("/api/articles/<int:article_id>/", methods=["GET"])
-def get_article(article_id):
-    """
-    Endpoint for getting an article based on its id
-    """
-    article = Articles.query.filter_by(id=article_id).first()
-    if article is None:
-        return failure_response("Task not found!")
-    return article.serialize(), 200
+    return "base request succeeded", 200
 
 @app.route("/api/articles/", methods=["GET"])
 def get_all_articles():
@@ -101,11 +91,61 @@ def get_all_articles():
     articles = []
     for article in Articles.query.all():
         if article is None:
-            return failure_response("Invalid article!")
+            return failure_response("Request failed serverside, invalid Article stored in database", 500)
         article.favicon = "https://www.google.com/s2/favicons?domain=" + article.url + "&sz=128" 
         print(article.ai_rating)
         articles.append(article.serialize())
     return articles, 200
+
+@app.route("/api/articles/<int:article_id>/", methods=["GET"])
+def get_article(article_id):
+    """
+    Endpoint for getting an article based on its id
+    """
+    article = Articles.query.filter_by(id=article_id).first()
+    if article is None:
+        return failure_response("Article not found")
+    return article.serialize(), 200
+
+@app.route("/api/articles/", methods=["POST"])
+def create_article():
+    """
+    Endpoint for creating a new article
+    """
+
+    params = request.args
+    url = params.get("url")
+
+    if url is None:
+        return failure_response("No url provided", 400)
+
+    # is the article already in the database? if so, return the id of the article
+    article = Articles.query.filter_by(url=url).first()
+    if article is not None:
+        print("ALREADY THERE")
+        return failure_response(f"article already exists at id {article.id}", 500)
+
+    article = handle_incoming_url(url)
+
+    if article is None:
+        return failure_response("Article not found")
+
+    # add the article to the database
+    new_article = Articles(
+        url = article['url'],
+        name = article['title'],
+        favicon = article['favicon'],
+        topImg = article['topImg'],
+        date = article['date'],
+        summary = article['summary'],
+        aiRating = "neutral" if article["aiRating"] == 1 else "conservative" if article["aiRating"] == 2 else "liberal",
+        userRating = -1
+    )
+
+    db.session.add(new_article)
+    db.session.commit()
+
+    return new_article.serialize(), 201
 
 @app.route("/api/articles/rating/<int:article_id>/", methods=["GET"])
 def get_rating(article_id):
@@ -154,21 +194,15 @@ def post_rating(article_id):
     params = request.args
     userID = params.get("user_id")
     rating = params.get("rating")
-    
-    if not userID or not rating:
-        return failure_response("Please provide parameters for user_id and rating")
-
-    print("userID", userID)
-    print("rating", rating)
 
     # if userID or rating is not provided, return error
     if userID is None or rating is None:
-        return failure_response("No userID or rating provided")
+        return failure_response("No userID or rating provided", 400)
 
 
     article = Articles.query.filter_by(id=article_id).first()
     if article is None:
-        return failure_response("Invalid article!")
+        return failure_response("Article not found!")
     
     # If they've already rated before, then delete the previous rating
     old_rating = Ratings.query.filter_by(article_id=article_id, user_id=userID).first()
@@ -197,8 +231,8 @@ def post_rating(article_id):
 
     article = Articles.query.filter_by(id=article_id).first()
     if article is None:
-        return failure_response("Task not found!")
-    return article.serialize(), 200
+        return failure_response("Article not found")
+    return article.serialize(), 201
 
 @app.route("/api/articles/rating/<int:article_id>/", methods=["DELETE"])
 def delete_rating(article_id):
@@ -212,7 +246,7 @@ def delete_rating(article_id):
 
     article = Articles.query.filter_by(id=article_id).first()
     if article is None:
-        return failure_response("Invalid article!")
+        return failure_response("Article not found")
 
     # Query for the rating first
     rating = Ratings.query.filter_by(article_id=article_id, user_id=userID).first()
@@ -229,48 +263,7 @@ def delete_rating(article_id):
     else:
         article.user_rating = sum(ratings) / len(ratings)
 
-    return article.serialize(), 200
-
-
-@app.route("/api/articles/", methods=["POST"])
-def create_article():
-    """
-    Endpoint for creating a new article
-    """
-
-    params = request.args
-    url = params.get("url")
-
-    if url is None:
-        return failure_response("No url provided")
-
-    # is the article already in the database? if so, return the id of the article
-    article = Articles.query.filter_by(url=url).first()
-    if article is not None:
-        print("ALREADY THERE")
-        return failure_response(f"article already exists at id {article.id}")
-
-    article = handle_incoming_url(url)
-
-    if article is None:
-        return failure_response("Error: article not found")
-
-    # add the article to the database
-    new_article = Articles(
-        url = article['url'],
-        name = article['title'],
-        favicon = article['favicon'],
-        topImg = article['topImg'],
-        date = article['date'],
-        summary = article['summary'],
-        aiRating = "neutral" if article["aiRating"] == 1 else "conservative" if article["aiRating"] == 2 else "liberal",
-        userRating = -1
-    )
-
-    db.session.add(new_article)
-    db.session.commit()
-
-    return new_article.serialize(), 200
+    return article.serialize(), 204
 
 # -- MAIN ------------------------------------------------------
 if __name__ == "__main__":

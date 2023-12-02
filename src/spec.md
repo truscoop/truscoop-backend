@@ -1,81 +1,76 @@
 # Specification for Backend of TruScoop
 
+Contributors: Daniel Chuang (dc863), Satya Datla (ssd76), Peter Bidoshi (pjb294)
+
 ## Tables
 
 Articles:
 
-- id
-- url
-- genre
-- perceived (?)
-- primary_topic
-- secondary_topic
-- democrat_vote
-- republican_vote
-- classification
-- (future idea) have users_id be recorded when they submit an article
-
-Users:
-
-- id
+id
+url
+name
+favicon
+top_img
+date
+summary
+aiRating
+userRating
 
 Ratings:
 
 - id
-- article_id (foreign key to Articles)
-- user_id (foreign key to user)
+- articleID (foreign key to Articles)
+- userID (stores iPhone's unique ID)
 - rating
 
-Comments:
+Comments (future idea, model implemented but other features not implemented):
 
 - id
-- article_id (foreign key to article)
-- user_id (foreign key to user)
-
-## TODO
-
-1. Add in the CSV into the database programmatically
-
-2. Add in the article labels programmatically, with the foreign key links
-
-3. Create get request for article that returns both
+- articleID (foreign key to article)
+- userID (stores iPhone's unique ID)
 
 ## Requests
 
-GET ALL ARTICLES
+GET /
+  - Description: Base page for testing deployment
+  - Success Return: "Base request succeeded", 200
+
 GET /api/articles/
-articles : list of articles
+  - Description: Get all articles
+  - Success Return: [Articles], 200
+  - Failure Return: "Request failed serverside, invalid Article stored in database", 500
 
-GET SPECIFIC ARTICLE
-GET /api/articles/id/
-article : { - id,
+GET /api/articles/<int:article_id>/
+  - Description: Get specific article
+  - Success Return: Article, 200
+  - Failure Return: "Article not found", 404
 
-- url,
-- type,
-- perceived (?),
-- primary_topic,
-- secondary_topic,
-- democrat_vote,
-- republican_vote,
-- text,
-- classification,  
-  }
+POST /api/articles/
+  - Description: Submits an article to our AI script (!) for classification, and then adds that article to our database
+  - Parameters: url
+  - Success Return: Article, 201
+  - Failure Return 1: "No url provided", 400
+  - Failure Return 2: "Article already exists at id {article.id}", 500
+  - Failure Return 3: "Article not found", 404
 
-GET USER RATING AND AGGREGATED RATING OF SPECIFIC ARTICLE AND USER
-GET /api/articles/rating/id/
-rating???: {
+GET /api/articles/rating/<int:article_id>/
+  - Description: Getting both the user rating based on the userID and articleID, as well as the aggregated mean rating of all ratings based on the articleID
+  - Success Return: {
+    "userRating" : Float in [-1.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0] where -1.0 indicates no rating (we make sure this isn't aggregated),
+    "rating" : Average of the ratings, Float in [0.0 to 5.0]
+  }, 200
+  - Failure Return: "No rating found", 404
 
-- userRating,
-- rating
-  }
+POST /api/articles/rating/<int:article_id>/
+  - Description: Adding a new rating given an articleID and userID
+  - Parameters: userID, rating
+  - Success Return: Article, 201
+  - Failure Return 1: "No userID or rating provided", 400
+  - Failure Return 2: "Article not found", 404
 
-POST RATING IN SPECIFIC ARTICLE WITH SPECIFIC USER
-POST /api/articles/rating/id/
-success : {
-Rating on article {article_id} of {rating} by user {user_id} submitted
-}
-
-DELETE RATING IN SPECIFIC ARTICLE OF SPECIFIC USER
-DELETE /api/articles/rating/id/
-{"success":
-"Rating deleted successfully!"}
+DELETE /api/articles/rating/<int:article_id>/
+  - Description: Removing a rating given an articleID and userID
+  - Parameters: userID
+  - Success Return: Article, 204
+  - Failure Return 1: "Article not found", 404
+  - Failure Return 2: "No rating found to delete", 404
