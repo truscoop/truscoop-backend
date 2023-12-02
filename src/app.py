@@ -195,9 +195,10 @@ def post_rating(article_id):
         article.user_rating = sum(ratings) / len(ratings)
     db.session.commit()
 
-    return success_response({
-        artcle.serialize()
-    })
+    article = Articles.query.filter_by(id=article_id).first()
+    if article is None:
+        return failure_response("Task not found!")
+    return article.serialize(), 200
 
 @app.route("/api/articles/rating/<int:article_id>/", methods=["DELETE"])
 def delete_rating(article_id):
