@@ -6,15 +6,15 @@ Contributors: Daniel Chuang (dc863), Satya Datla (ssd76), Peter Bidoshi (pjb294)
 
 Articles:
 
-id
-url
-name
-favicon
-top_img
-date
-summary
-aiRating
-userRating
+- id
+- url
+- name
+- favicon
+- top_img
+- date
+- summary
+- aiRating
+- userRating
 
 Ratings:
 
