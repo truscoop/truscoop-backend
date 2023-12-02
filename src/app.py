@@ -38,7 +38,6 @@ def load_articles():
         data2 = data.replace(np.nan, '', regex=True)
 
         for index, row in data2.iterrows():
-            print(datetime.strptime(row["date"], date_format))
             article = Articles(
                     url = row["url"],
                     name = row["title"],
@@ -47,7 +46,7 @@ def load_articles():
                     date = datetime.strptime(row["date"], date_format),
                     summary = row["summary"],
                     aiRating = "neutral" if row["aiRating"] == 1 else "conservative" if row["aiRating"] == 2 else "liberal",
-                    userRating = -1
+                    userRating = -1.0
             )
             db.session.add(article)
         db.session.commit()
@@ -104,6 +103,7 @@ def get_all_articles():
         if article is None:
             return failure_response("Invalid article!")
         article.favicon = "https://www.google.com/s2/favicons?domain=" + article.url + "&sz=128" 
+        print(article.ai_rating)
         articles.append(article.serialize())
     return articles, 200
 
@@ -229,8 +229,8 @@ def delete_rating(article_id):
     else:
         article.user_rating = sum(ratings) / len(ratings)
 
-    db.session.commit()
-    return success_response({"success": "Rating deleted successfully!"})
+    return article.serialize(), 200
+
 
 @app.route("/api/articles/", methods=["POST"])
 def create_article():
@@ -238,38 +238,39 @@ def create_article():
     Endpoint for creating a new article
     """
 
-    body = json.loads(request.data)
-    url = body.get("url")
+    params = request.args
+    url = params.get("url")
+
     if url is None:
         return failure_response("No url provided")
 
     # is the article already in the database? if so, return the id of the article
     article = Articles.query.filter_by(url=url).first()
     if article is not None:
-        return success_response({"message": "article already exists","id": article.id})
+        print("ALREADY THERE")
+        return failure_response(f"article already exists at id {article.id}")
 
     article = handle_incoming_url(url)
+
     if article is None:
         return failure_response("Error: article not found")
 
     # add the article to the database
     new_article = Articles(
         url = article['url'],
-        name = article['name'],
+        name = article['title'],
         favicon = article['favicon'],
         topImg = article['topImg'],
         date = article['date'],
         summary = article['summary'],
-        aiRating = article['aiRating'],
-        userRating = article['userRating']
+        aiRating = "neutral" if article["aiRating"] == 1 else "conservative" if article["aiRating"] == 2 else "liberal",
+        userRating = -1
     )
 
     db.session.add(new_article)
     db.session.commit()
 
-
-
-    return success_response({"success": "Article added successfully!"})
+    return new_article.serialize(), 200
 
 # -- MAIN ------------------------------------------------------
 if __name__ == "__main__":

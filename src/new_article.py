@@ -42,11 +42,15 @@ def handle_incoming_url(url):
     # aiRating is the prediction from the model
     res_map = {}
 
+    print("NEW ARTICLE PROCESSING")
+
     article = Article(url)
     try:
         article.download()
         article.parse()
         article.nlp()
+
+        print("NEW ARTICLE DOWNLOADED")
 
         # print the type of the article
         print(type(url))
@@ -64,7 +68,7 @@ def handle_incoming_url(url):
         res_map['summary'] = article.summary
         res_map['aiRating'] = determine_bias(article.text)
         # userRating will start as None
-        res_map['userRating'] = None
+        res_map['userRating'] = -1.0
         return res_map
 
     except:

@@ -35,7 +35,7 @@ class Articles(db.Model):
     date = db.Column(db.DateTime, nullable=False)
     summary = db.Column(db.String, nullable=False)
     ai_rating = db.Column(db.String, nullable=False)
-    user_rating = db.Column(db.Integer, nullable=False)
+    user_rating = db.Column(db.Float, nullable=False)
 
     def __init__(self, **kwargs):
         """
@@ -44,11 +44,11 @@ class Articles(db.Model):
         self.url = kwargs.get("url", "")
         self.name = kwargs.get("name", "")
         self.favicon = kwargs.get("favicon", "")
-        self.top_img = kwargs.get("top_img", "")
+        self.top_img = kwargs.get("topImg", "")
         self.date = kwargs.get("date", "")
         self.summary = kwargs.get("summary", "")
-        self.ai_rating = kwargs.get("ai_rating", "")
-        self.user_rating = kwargs.get("user_rating", "")
+        self.ai_rating = kwargs.get("aiRating", "")
+        self.user_rating = kwargs.get("user_rating", -1.0)
 
     def serialize(self):
         """
